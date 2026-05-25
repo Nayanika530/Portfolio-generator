@@ -1,0 +1,82 @@
+/*
+ * index.css — Global Stylesheet
+ * ─────────────────────────────────────────────────────────────
+ * This file is the single entry point for all CSS in the app.
+ * With Tailwind CSS v4, we use the @import directive instead of
+ * the old @tailwind directives. Tailwind scans all JSX files and
+ * generates only the utility classes we actually use.
+ * ─────────────────────────────────────────────────────────────
+ */
+@import "tailwindcss";
+
+/* ── Global Font Stack ──────────────────────────────────────── */
+/* Applied to the entire page via the <body> element */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  /* Improve font rendering on macOS/Windows */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Heading Font ───────────────────────────────────────────── */
+/* All h1–h6 elements use the heavier 'Space Grotesk' typeface */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+/* ── Neon Glow Pulse Animation ──────────────────────────────── */
+/*
+ * @keyframes defines a reusable animation sequence.
+ * 'neonPulse' alternates the text-shadow intensity to create
+ * a breathing neon-light glow effect on the hero subtitle.
+ */
+@keyframes neonPulse {
+  0%, 100% {
+    text-shadow:
+      0 0 8px #00f0ff,
+      0 0 20px #00f0ff,
+      0 0 40px #00f0ff;
+  }
+  50% {
+    text-shadow:
+      0 0 4px #00f0ff,
+      0 0 10px #00f0ff,
+      0 0 20px #00f0ff;
+  }
+}
+
+/* ── Utility class to apply the neon pulse animation ────────── */
+/* Used directly in JSX as className="neon-text" */
+.neon-text {
+  animation: neonPulse 2.5s ease-in-out infinite;
+  color: #00f0ff;
+}
+
+/* ── Floating Up Animation ──────────────────────────────────── */
+/* Subtle entrance animation for cards and sections */
+@keyframes floatUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float-up {
+  animation: floatUp 0.6s ease-out forwards;
+}
+
+/* ── Custom Scrollbar (Webkit browsers) ─────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #020617; /* slate-950 */
+}
+::-webkit-scrollbar-thumb {
+  background: #00f0ff44;
+  border-radius: 3px;
+}
