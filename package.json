@@ -10,7 +10,7 @@
     "dev:all": "powershell -Command \"Start-Process npm -ArgumentList 'run dev:api' -NoNewWindow; npm run dev --workspace=web\"",
     "dev:web": "npm run dev --workspace=web",
     "dev:api": "npm run dev --workspace=api",
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspaces && node -e \"import('fs').then(fs => fs.cpSync('apps/web/dist', 'dist', { recursive: true }))\"",
     "start": "node apps/api/dist/main.js",
     "typecheck": "tsc --noEmit -p apps/web/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json",
     "lint": "eslint ."
