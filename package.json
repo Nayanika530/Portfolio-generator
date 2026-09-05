@@ -12,17 +12,20 @@
     "dev:web": "npm run dev --workspace=web",
     "dev:api": "npm run dev --workspace=api",
     "build": "npm run build --workspaces && node -e \"import('fs').then(fs => fs.cpSync('apps/web/dist', 'dist', { recursive: true }))\"",
+    "build:api": "npm run build --workspace=@portfolio/types && npm run build --workspace=api",
     "start": "node apps/api/dist/main.js",
     "test": "node --test --experimental-strip-types apps/api/tests/security.test.ts apps/api/tests/api.test.ts apps/api/tests/github.test.ts apps/api/tests/intelligence.test.ts apps/api/tests/chain.test.ts",
     "typecheck": "tsc --noEmit -p apps/web/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json",
     "lint": "eslint ."
+  },
+  "dependencies": {
+    "typescript": "^5.7.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
-    "globals": "^17.6.0",
-    "typescript": "^5.7.3"
+    "globals": "^17.6.0"
   }
 }
