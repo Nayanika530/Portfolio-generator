@@ -19,15 +19,37 @@ import { rateLimiterMiddleware, securityHeadersMiddleware } from './middleware/s
 // Initialize Seed Reference Library
 initializeReferenceLibrary()
 
+// Async route boundary wrapper
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: express.NextFunction) => Promise<any>
+) => (req: Request, res: Response, next: express.NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next)
+}
+
 const app = express()
 const PORT = process.env.PORT || 3001
+
+// Support reverse proxies (Render, Railway, Fly.io, Cloudflare)
+app.set('trust proxy', 1)
+
+// Cookie configuration helper
+export const getCookieOptions = (maxAgeMs: number) => {
+  const isCrossDomain = process.env.NODE_ENV === 'production' && process.env.CROSS_DOMAIN_COOKIES === 'true'
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: (isCrossDomain ? 'none' : 'lax') as 'none' | 'lax',
+    maxAge: maxAgeMs,
+  }
+}
 
 // Global Middlewares
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser())
-// CORS origin configuration (supports comma-separated origins via CLIENT_ORIGIN)
-const configuredOrigins = process.env.CLIENT_ORIGIN
-  ? process.env.CLIENT_ORIGIN.split(',').map((origin) => origin.trim())
+
+// CORS origin configuration (supports comma-separated origins via CLIENT_ORIGIN or FRONTEND_ORIGIN)
+const configuredOrigins = (process.env.CLIENT_ORIGIN || process.env.FRONTEND_ORIGIN)
+  ? (process.env.CLIENT_ORIGIN || process.env.FRONTEND_ORIGIN)!.split(',').map((origin) => origin.trim())
   : ['http://localhost:5173', 'http://127.0.0.1:5173']
 
 app.use(
@@ -55,18 +77,118 @@ app.get('/api/health', (_req: Request, res: Response) => {
 })
 
 // ── Authentication Routes ─────────────────────────────────────────────────────
+// GitHub OAuth: Get Authorization URL
+app.get('/api/auth/github/url', (req: Request, res: Response) => {
+  const clientOrigin = configuredOrigins[0] || 'http://localhost:5173'
+  const isHtml = req.headers.accept?.includes('text/html')
+
+  try {
+    const callbackUrl = process.env.GITHUB_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/github/callback`
+    const { url, state } = AuthService.getGitHubAuthorizationUrl(callbackUrl)
+
+    res.cookie('oauth_state', state, getCookieOptions(10 * 60 * 1000)) // 10 minutes
+
+    if (isHtml) {
+      res.redirect(url)
+    } else {
+      res.json({ url, state })
+    }
+  } catch (err: any) {
+    if (isHtml) {
+      res.redirect(
+        `${clientOrigin}/?auth_error=${encodeURIComponent(
+          err.message || 'GitHub OAuth is not configured on the server. Please use Demo Mode.'
+        )}`
+      )
+    } else {
+      res.status(400).json({
+        error: 'OAuthConfigurationError',
+        message: err.message || 'GitHub OAuth is not configured. Please configure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET, or use Demo Mode.',
+      })
+    }
+  }
+})
+
+
+// GitHub OAuth: Callback & Token Exchange
+app.get('/api/auth/github/callback', asyncHandler(async (req: Request, res: Response) => {
+  const clientOrigin = configuredOrigins[0] || 'http://localhost:5173'
+  const { code, state, error, error_description } = req.query
+
+  if (error) {
+    res.redirect(
+      `${clientOrigin}/?auth_error=${encodeURIComponent(
+        String(error_description || error || 'GitHub authorization failed')
+      )}`
+    )
+    return
+  }
+
+  if (!code || !state) {
+    res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Missing OAuth code or state parameter')}`)
+    return
+  }
+
+  const cookieState = req.cookies?.['oauth_state']
+  const stateEntry = AuthService.consumeOAuthState(String(state))
+
+  if (!stateEntry || (cookieState && cookieState !== state)) {
+    res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent('Invalid or expired OAuth state parameter')}`)
+    return
+  }
+
+  try {
+    const callbackUrl = process.env.GITHUB_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/github/callback`
+    const accessToken = await AuthService.exchangeCodeForAccessToken(
+      String(code),
+      callbackUrl,
+      stateEntry.codeVerifier
+    )
+    const session = await AuthService.loginWithGitHubToken(accessToken)
+
+    res.cookie('portfolio_session_id', session.id, getCookieOptions(7 * 24 * 60 * 60 * 1000))
+    res.clearCookie('oauth_state', getCookieOptions(0))
+
+    res.redirect(`${clientOrigin}/?authenticated=true`)
+  } catch (err: any) {
+    res.redirect(`${clientOrigin}/?auth_error=${encodeURIComponent(err.message || 'Token exchange failed')}`)
+  }
+}))
+
+// Direct GitHub Token Authentication (PAT - Strictly Restricted to Dev/Testing Environments)
+app.post('/api/auth/github/token', asyncHandler(async (req: Request, res: Response) => {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEV_PAT_AUTH !== 'true') {
+    res.status(403).json({
+      error: 'Forbidden',
+      message: 'Direct Personal Access Token (PAT) ingestion is disabled in production environments. Please authenticate via the secure GitHub OAuth flow.',
+    })
+    return
+  }
+
+  const { token } = req.body
+  if (!token || typeof token !== 'string') {
+    res.status(400).json({ error: 'ValidationError', message: 'GitHub token is required' })
+    return
+  }
+
+  const session = await AuthService.loginWithGitHubToken(token.trim())
+
+  res.cookie('portfolio_session_id', session.id, getCookieOptions(7 * 24 * 60 * 60 * 1000))
+
+  res.json({
+    success: true,
+    session,
+    sessionId: session.id,
+  })
+}))
+
 // Developer Demo Login / One-Click Test
 app.post('/api/auth/demo-login', async (_req: Request, res: Response) => {
   try {
     const session = await AuthService.loginOrCreateSession(true)
     
     // Set secure HttpOnly cookie
-    res.cookie('portfolio_session_id', session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    })
+    res.cookie('portfolio_session_id', session.id, getCookieOptions(7 * 24 * 60 * 60 * 1000))
 
     res.json({
       success: true,
@@ -100,7 +222,7 @@ app.post('/api/auth/logout', (req: Request, res: Response) => {
   if (sessionId) {
     AuthService.logout(sessionId)
   }
-  res.clearCookie('portfolio_session_id')
+  res.clearCookie('portfolio_session_id', getCookieOptions(0))
   res.json({ success: true })
 })
 
@@ -288,6 +410,13 @@ app.post('/api/portfolio/deploy', requireAuth, (req: Request, res: Response) => 
   })
 })
 
+// Test endpoint for verifying asynchronous error boundaries
+if (process.env.NODE_ENV === 'test') {
+  app.get('/api/test/async-error', asyncHandler(async () => {
+    throw new Error('Simulated internal failure')
+  }))
+}
+
 // ── 404 Route Not Found Handler ───────────────────────────────────────────────
 app.use((req: Request, res: Response) => {
   res.status(404).json({
@@ -298,15 +427,19 @@ app.use((req: Request, res: Response) => {
 
 // ── Global Centralized Express Error Handler ──────────────────────────────────
 app.use((err: any, _req: Request, res: Response, _next: express.NextFunction) => {
-  console.error('[Unhandled API Exception]:', err)
-  const status = typeof err.status === 'number' ? err.status : 500
+  console.error('[Unhandled API Exception]:', err?.message || err)
+  const status = typeof err.status === 'number' && err.status >= 400 && err.status < 600 ? err.status : 500
   res.status(status).json({
     error: err.name || 'InternalServerError',
-    message: err.message || 'An unexpected error occurred processing your request.',
+    message: status === 500 ? 'An unexpected error occurred processing your request.' : (err.message || 'Error occurred'),
   })
 })
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`[Portfolio Intelligence API] Modular Monolith running on http://localhost:${PORT}`)
-})
+export { app }
+
+// Start server (only in non-test mode)
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`[Portfolio Intelligence API] Modular Monolith running on http://localhost:${PORT}`)
+  })
+}

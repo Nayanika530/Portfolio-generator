@@ -28,6 +28,7 @@ import {
   RefreshCw,
   Sparkles,
   BookOpen,
+  AlertTriangle,
 } from 'lucide-react'
 
 export function App() {
@@ -42,15 +43,35 @@ export function App() {
   const [strategy, setStrategy] = useState<PortfolioStrategy | null>(null)
   const [recommendation, setRecommendation] = useState<StrategyRecommendation | null>(null)
 
+  const [serviceStatus, setServiceStatus] = useState<{
+    repos: 'loaded' | 'error'
+    skills: 'loaded' | 'error'
+    resume: 'loaded' | 'error'
+    strategy: 'loaded' | 'error'
+  }>({
+    repos: 'loaded',
+    skills: 'loaded',
+    resume: 'loaded',
+    strategy: 'loaded',
+  })
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'intelligence' | 'skills' | 'resume' | 'portfolio'>('dashboard')
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   // Initialize session and data
   useEffect(() => {
     const initApp = async () => {
       setIsLoading(true)
       try {
+        // Check for auth error in URL
+        const params = new URLSearchParams(window.location.search)
+        if (params.has('auth_error')) {
+          setAuthError(decodeURIComponent(params.get('auth_error') || 'GitHub authentication failed'))
+          window.history.replaceState({}, document.title, window.location.pathname)
+        }
+
         const sessionData = await api.getSession()
         if (sessionData && sessionData.session) {
           setSession(sessionData.session)
@@ -116,6 +137,13 @@ export function App() {
       if (recRes.status === 'fulfilled' && recRes.value?.recommendation) {
         setRecommendation(recRes.value.recommendation)
       }
+
+      setServiceStatus({
+        repos: reposRes.status === 'fulfilled' ? 'loaded' : 'error',
+        skills: skillsRes.status === 'fulfilled' ? 'loaded' : 'error',
+        resume: matrixRes.status === 'fulfilled' ? 'loaded' : 'error',
+        strategy: stratRes.status === 'fulfilled' ? 'loaded' : 'error',
+      })
     } catch (err) {
       console.error('Failed to load portfolio intelligence data:', err)
     }
@@ -280,9 +308,31 @@ export function App() {
           <div className="flex items-center gap-3">
             {session ? (
               <div className="flex items-center gap-3">
+                {session.isDemoUser ? (
+                  <a
+                    href={api.getGithubAuthUrl()}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-mono text-xs transition-colors"
+                    title="Connect your personal GitHub account to ingest real repositories"
+                  >
+                    <Github className="w-3.5 h-3.5" />
+                    <span>Connect Live GitHub</span>
+                  </a>
+                ) : null}
+
                 <div className="hidden lg:flex flex-col text-right font-mono">
                   <span className="text-xs font-semibold text-white">{session.displayName}</span>
-                  <span className="text-[10px] text-cyan-400">SESSION_ACTIVE</span>
+                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                    {session.isDemoUser ? (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        DEMO DATA
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        LIVE GITHUB
+                      </span>
+                    )}
+                    <span className="text-[10px] text-cyan-400">ACTIVE</span>
+                  </div>
                 </div>
                 <button
                   onClick={handleLogout}
@@ -293,14 +343,22 @@ export function App() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={handleDemoConnect}
-                disabled={isLoggingIn}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center gap-2 shadow-lg hover:shadow-cyan-400/25 transition-all"
-              >
-                <Github className="w-4 h-4 text-slate-950" />
-                <span>Connect GitHub</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href={api.getGithubAuthUrl()}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center gap-2 shadow-lg hover:shadow-cyan-400/25 transition-all"
+                >
+                  <Github className="w-4 h-4 text-slate-950" />
+                  <span>Live GitHub Login</span>
+                </a>
+                <button
+                  onClick={handleDemoConnect}
+                  disabled={isLoggingIn}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs transition-all border border-slate-700"
+                >
+                  Demo Mode
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -308,6 +366,40 @@ export function App() {
 
       {/* ── Main Content Area ────────────────────────────────────────── */}
       <main className="flex-grow max-w-7xl w-full mx-auto p-6">
+        {/* Auth Error Banner */}
+        {authError && (
+          <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-rose-300 text-xs font-mono">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>Authentication Notice: {authError}</span>
+            </div>
+            <button
+              onClick={() => setAuthError(null)}
+              className="text-rose-400 hover:text-rose-200 text-xs underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Graceful Degradation Notice Banner */}
+        {Object.values(serviceStatus).some((s) => s === 'error') && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-300 text-xs font-mono">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                Partial Telemetry Notice: One or more background intelligence streams could not be reached. Core portfolio studio functionality remains active.
+              </span>
+            </div>
+            <button
+              onClick={loadAllData}
+              className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-amber-200 text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Retry Sync
+            </button>
+          </div>
+        )}
         {!session ? (
           <div className="py-20 text-center max-w-2xl mx-auto space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">
@@ -354,7 +446,7 @@ export function App() {
             )}
 
             {activeTab === 'skills' && (
-              <SkillEvidenceView skills={skills} />
+              <SkillEvidenceView skills={skills} isDemoUser={session.isDemoUser} />
             )}
 
             {activeTab === 'resume' && (
@@ -362,6 +454,7 @@ export function App() {
                 claims={claims}
                 hiddenGems={hiddenGems}
                 onAddClaim={handleAddResumeClaim}
+                isDemoUser={session.isDemoUser}
               />
             )}
 
@@ -371,6 +464,7 @@ export function App() {
                 onUpdateConfig={handleUpdatePortfolioConfig}
                 onDeploy={handleDeployPortfolio}
                 previewUrl={api.getPreviewUrl()}
+                isDemoUser={session.isDemoUser}
               />
             )}
           </>

@@ -59,12 +59,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold text-white tracking-tight">{session.displayName}</h2>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">
-                  @{session.username}
-                </span>
-                {session.isDemoUser && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">
-                    High-Assurance Profile
+                {session.isDemoUser ? (
+                  <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    DEMO DATA (SYNTHESIZED PROFILE)
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    LIVE GITHUB VERIFIED
                   </span>
                 )}
               </div>

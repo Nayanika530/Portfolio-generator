@@ -8,6 +8,7 @@ interface PortfolioBuilderViewProps {
   onUpdateConfig: (updates: Partial<PortfolioConfig>) => Promise<void>
   onDeploy: () => Promise<{ success: boolean; deployedUrl: string; deployedAt: string }>
   previewUrl: string
+  isDemoUser?: boolean
 }
 
 export const PortfolioBuilderView: React.FC<PortfolioBuilderViewProps> = ({
@@ -15,6 +16,7 @@ export const PortfolioBuilderView: React.FC<PortfolioBuilderViewProps> = ({
   onUpdateConfig,
   onDeploy,
   previewUrl,
+  isDemoUser = true,
 }) => {
   const [headline, setHeadline] = useState(config.headline)
   const [summaryBio, setSummaryBio] = useState(config.summaryBio)
@@ -64,9 +66,22 @@ export const PortfolioBuilderView: React.FC<PortfolioBuilderViewProps> = ({
       <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-cyan-950/80 text-cyan-400 border border-cyan-800/60 mb-2">
-              <Layout className="w-3.5 h-3.5" />
-              Evidence-Grounded Portfolio Generator
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
+                <Layout className="w-3.5 h-3.5" />
+                Evidence-Grounded Portfolio Generator
+              </div>
+              {isDemoUser ? (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  DATA SOURCE: DEMO SYNTHESIS
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  DATA SOURCE: LIVE GITHUB VERIFIED
+                </span>
+              )}
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">Portfolio Studio & Live Preview</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">

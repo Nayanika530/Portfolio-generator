@@ -5,9 +5,10 @@ import { ShieldCheck, FileCode, CheckCircle2, AlertTriangle, Terminal } from 'lu
 
 interface SkillEvidenceViewProps {
   skills: SkillEvidenceItem[]
+  isDemoUser?: boolean
 }
 
-export const SkillEvidenceView: React.FC<SkillEvidenceViewProps> = ({ skills }) => {
+export const SkillEvidenceView: React.FC<SkillEvidenceViewProps> = ({ skills, isDemoUser = true }) => {
   // Group skills by category
   const categories = Array.from(new Set(skills.map(s => s.category)))
 
@@ -17,9 +18,22 @@ export const SkillEvidenceView: React.FC<SkillEvidenceViewProps> = ({ skills }) 
       <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-cyan-950/80 text-cyan-400 border border-cyan-800/60 mb-2">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Source Grounded Skills Engine
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Source Grounded Skills Engine
+              </div>
+              {isDemoUser ? (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  PROVENANCE: DEMO / SYNTHETIC
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  PROVENANCE: LIVE GITHUB EVIDENCE
+                </span>
+              )}
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">Code-Verified Technical Skills</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">

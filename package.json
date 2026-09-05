@@ -13,6 +13,7 @@
     "dev:api": "npm run dev --workspace=api",
     "build": "npm run build --workspaces && node -e \"import('fs').then(fs => fs.cpSync('apps/web/dist', 'dist', { recursive: true }))\"",
     "start": "node apps/api/dist/main.js",
+    "test": "node --test --experimental-strip-types apps/api/tests/security.test.ts apps/api/tests/api.test.ts apps/api/tests/github.test.ts apps/api/tests/intelligence.test.ts apps/api/tests/chain.test.ts",
     "typecheck": "tsc --noEmit -p apps/web/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json",
     "lint": "eslint ."
   },

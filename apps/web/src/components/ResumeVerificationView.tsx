@@ -7,12 +7,14 @@ interface ResumeVerificationViewProps {
   claims: ResumeClaim[]
   hiddenGems: HiddenGemSkill[]
   onAddClaim: (claimText: string) => Promise<void>
+  isDemoUser?: boolean
 }
 
 export const ResumeVerificationView: React.FC<ResumeVerificationViewProps> = ({
   claims,
   hiddenGems,
   onAddClaim,
+  isDemoUser = true,
 }) => {
   const [newClaimInput, setNewClaimInput] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -39,9 +41,22 @@ export const ResumeVerificationView: React.FC<ResumeVerificationViewProps> = ({
       <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-indigo-950/80 text-indigo-400 border border-indigo-800/60 mb-2">
-              <FileText className="w-3.5 h-3.5" />
-              Resume Claim Grounding Pipeline
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-indigo-950/80 text-indigo-400 border border-indigo-800/60">
+                <FileText className="w-3.5 h-3.5" />
+                Resume Claim Grounding Pipeline
+              </div>
+              {isDemoUser ? (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  GROUNDING: DEMO / SYNTHETIC
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  GROUNDING: LIVE GITHUB CODEBASE
+                </span>
+              )}
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">Resume Claims ↔ GitHub Evidence</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xl">

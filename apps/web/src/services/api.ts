@@ -43,6 +43,10 @@ export const api = {
     return data
   },
 
+  getGithubAuthUrl(): string {
+    return `${API_BASE}/auth/github/url`
+  },
+
   async getSession(): Promise<{ session: UserSession } | null> {
     try {
       const res = await fetch(`${API_BASE}/auth/me`, {

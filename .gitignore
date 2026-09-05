@@ -22,6 +22,12 @@ apps/*/dist/
 !.env.example
 *.local
 
+# Local file database & scratch directories
+data/
+*.tmp
+scratch/
+
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -9,6 +9,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "@portfolio/types": "*",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

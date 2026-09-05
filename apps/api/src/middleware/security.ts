@@ -11,19 +11,36 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 120
 const MAX_TRACKED_IPS = 25000
 
-// Periodic TTL garbage collection (prevents unbounded memory growth)
-const cleanupInterval = setInterval(() => {
-  const now = Date.now()
+export function pruneExpiredEntries(currentTime: number = Date.now()): number {
+  let pruned = 0
   for (const [ip, data] of requestCounts.entries()) {
-    if (now > data.resetTime) {
+    if (currentTime > data.resetTime) {
       requestCounts.delete(ip)
+      pruned++
     }
   }
+  return pruned
+}
+
+// Periodic TTL garbage collection (prevents unbounded memory growth)
+const cleanupInterval = setInterval(() => {
+  pruneExpiredEntries()
 }, 60 * 1000)
 
 // Allow Node event loop to gracefully terminate
 if (cleanupInterval.unref) {
   cleanupInterval.unref()
+}
+
+// Testing inspection utilities
+export function _getTrackedIpCount(): number {
+  return requestCounts.size
+}
+export function _injectTrackedIp(ip: string, count: number, resetTime: number): void {
+  requestCounts.set(ip, { count, resetTime })
+}
+export function _clearTrackedIps(): void {
+  requestCounts.clear()
 }
 
 export function securityHeadersMiddleware(

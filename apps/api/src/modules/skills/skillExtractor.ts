@@ -121,7 +121,7 @@ export function extractSkillsFromRepositories(
       })
     }
 
-    // Check for Security Scanning / Vulnerability Analysis
+    // Check for Application Security / Vulnerability Analysis
     if (repo.name === 'Security Scanner' || repo.hasSecurityPolicy) {
       addSkillEvidence(skillMap, {
         id: `skill-appsec-${userId}`,
@@ -134,13 +134,18 @@ export function extractSkillsFromRepositories(
         citations: [
           {
             repositoryName: repo.name,
-            filePath: 'pkg/scanner/rules.go',
-            evidenceSnippet: 'func InspectAST(node ast.Node) []VulnerabilityFinding',
+            filePath: repo.hasSecurityPolicy ? 'SECURITY.md' : 'pkg/scanner/rules.go',
+            evidenceSnippet: repo.hasSecurityPolicy
+              ? 'Security disclosure policy and vulnerability reporting guidelines'
+              : 'func InspectAST(node ast.Node) []VulnerabilityFinding',
           },
         ],
         verifiedInCode: true,
       })
+    }
 
+    // Check for Go
+    if (repo.languages['Go'] || repo.manifestsFound.some(m => m.includes('go.mod'))) {
       addSkillEvidence(skillMap, {
         id: `skill-go-${userId}`,
         userId,
@@ -153,7 +158,7 @@ export function extractSkillsFromRepositories(
           {
             repositoryName: repo.name,
             filePath: 'go.mod',
-            evidenceSnippet: 'module github.com/developer/security-scanner\ngo 1.23',
+            evidenceSnippet: `module ${repo.fullName}\ngo 1.23`,
           },
         ],
         verifiedInCode: true,
