@@ -107,8 +107,8 @@ function renderMinimalEngineerTemplate(
 
   // Strategy badge
   const strategyPill = strategy ? `
-    <div class="strategy-badge" title="${strategy.explainabilityRationale.join(' | ')}">
-      Strategy: ${strategy.selectedReferenceIds.join(' + ')} • Density: ${Math.round(strategy.visualDensity * 100)}%
+    <div class="strategy-badge" title="${escapeHtml(strategy.explainabilityRationale.join(' | '))}">
+      Strategy: ${escapeHtml(strategy.selectedReferenceIds.join(' + '))} • Density: ${Math.round(strategy.visualDensity * 100)}%
     </div>
   ` : ''
 
@@ -334,8 +334,8 @@ function renderCybersecuritySystemsTemplate(
   `).join('')
 
   const strategyBar = strategy ? `
-    <div class="strategy-status">
-      <span>STRATEGY::BLENDED [${strategy.selectedReferenceIds.join(' + ')}]</span>
+    <div class="strategy-status" title="${escapeHtml(strategy.explainabilityRationale.join(' | '))}">
+      <span>STRATEGY::BLENDED [${escapeHtml(strategy.selectedReferenceIds.join(' + '))}]</span>
       <span>DEPTH::${Math.round(strategy.technicalDepth * 100)}%</span>
     </div>
   ` : ''

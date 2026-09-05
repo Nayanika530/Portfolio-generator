@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@portfolio/types": "*",
     "lucide-react": "^0.475.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

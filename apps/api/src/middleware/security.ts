@@ -5,10 +5,26 @@
 
 import { Request, Response, NextFunction } from 'express'
 
-// In-Memory Token Bucket Rate Limiter
+// In-Memory Token Bucket Rate Limiter with TTL Pruning
 const requestCounts = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 120
+const MAX_TRACKED_IPS = 25000
+
+// Periodic TTL garbage collection (prevents unbounded memory growth)
+const cleanupInterval = setInterval(() => {
+  const now = Date.now()
+  for (const [ip, data] of requestCounts.entries()) {
+    if (now > data.resetTime) {
+      requestCounts.delete(ip)
+    }
+  }
+}, 60 * 1000)
+
+// Allow Node event loop to gracefully terminate
+if (cleanupInterval.unref) {
+  cleanupInterval.unref()
+}
 
 export function securityHeadersMiddleware(
   _req: Request,
@@ -37,6 +53,11 @@ export function rateLimiterMiddleware(
 
   const clientData = requestCounts.get(clientIp)
   if (!clientData || now > clientData.resetTime) {
+    if (requestCounts.size >= MAX_TRACKED_IPS) {
+      for (const [ip, data] of requestCounts.entries()) {
+        if (now > data.resetTime) requestCounts.delete(ip)
+      }
+    }
     requestCounts.set(clientIp, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS })
     return next()
   }

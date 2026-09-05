@@ -80,7 +80,7 @@ export function App() {
         catsRes,
         stratRes,
         recRes,
-      ] = await Promise.all([
+      ] = await Promise.allSettled([
         api.getRepositories(),
         api.getSkills(),
         api.getResumeMatrix(),
@@ -91,15 +91,31 @@ export function App() {
         api.getStrategyRecommendations(),
       ])
 
-      setRepos(reposRes.repos)
-      setSkills(skillsRes.skills)
-      setClaims(matrixRes.claims)
-      setHiddenGems(matrixRes.hiddenGems)
-      setPortfolioConfig(configRes.config)
-      setReferences(refsRes.references)
-      setCategories(catsRes.categories)
-      setStrategy(stratRes.strategy)
-      setRecommendation(recRes.recommendation)
+      if (reposRes.status === 'fulfilled' && reposRes.value?.repos) {
+        setRepos(reposRes.value.repos)
+      }
+      if (skillsRes.status === 'fulfilled' && skillsRes.value?.skills) {
+        setSkills(skillsRes.value.skills)
+      }
+      if (matrixRes.status === 'fulfilled' && matrixRes.value) {
+        setClaims(matrixRes.value.claims || [])
+        setHiddenGems(matrixRes.value.hiddenGems || [])
+      }
+      if (configRes.status === 'fulfilled' && configRes.value?.config) {
+        setPortfolioConfig(configRes.value.config)
+      }
+      if (refsRes.status === 'fulfilled' && refsRes.value?.references) {
+        setReferences(refsRes.value.references)
+      }
+      if (catsRes.status === 'fulfilled' && catsRes.value?.categories) {
+        setCategories(catsRes.value.categories)
+      }
+      if (stratRes.status === 'fulfilled' && stratRes.value?.strategy) {
+        setStrategy(stratRes.value.strategy)
+      }
+      if (recRes.status === 'fulfilled' && recRes.value?.recommendation) {
+        setRecommendation(recRes.value.recommendation)
+      }
     } catch (err) {
       console.error('Failed to load portfolio intelligence data:', err)
     }

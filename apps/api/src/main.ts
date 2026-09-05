@@ -288,6 +288,24 @@ app.post('/api/portfolio/deploy', requireAuth, (req: Request, res: Response) => 
   })
 })
 
+// ── 404 Route Not Found Handler ───────────────────────────────────────────────
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Cannot ${req.method} ${req.path}`,
+  })
+})
+
+// ── Global Centralized Express Error Handler ──────────────────────────────────
+app.use((err: any, _req: Request, res: Response, _next: express.NextFunction) => {
+  console.error('[Unhandled API Exception]:', err)
+  const status = typeof err.status === 'number' ? err.status : 500
+  res.status(status).json({
+    error: err.name || 'InternalServerError',
+    message: err.message || 'An unexpected error occurred processing your request.',
+  })
+})
+
 // Start server
 app.listen(PORT, () => {
   console.log(`[Portfolio Intelligence API] Modular Monolith running on http://localhost:${PORT}`)

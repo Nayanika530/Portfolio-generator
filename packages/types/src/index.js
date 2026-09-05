@@ -1,6 +1,6 @@
-// apps/web/src/types.ts
+// packages/types/src/index.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// Re-export Canonical Domain Models from shared workspace package: @portfolio/types
+// Shared Domain Models for Portfolio Intelligence Platform
+// Consumed by both apps/web (frontend) and apps/api (backend)
 // ─────────────────────────────────────────────────────────────────────────────
-
-export * from '@portfolio/types'
+export {};
