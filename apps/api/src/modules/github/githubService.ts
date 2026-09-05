@@ -85,10 +85,11 @@ export class GitHubService {
           owner,
           repo: repoName,
         })
-        const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0)
+        const langRecord = langData as Record<string, number>
+        const totalBytes = Object.values(langRecord).reduce((a: number, b: number) => a + b, 0)
         if (totalBytes > 0) {
-          for (const [lang, bytes] of Object.entries(langData)) {
-            languages[lang] = Math.round((bytes / totalBytes) * 100)
+          for (const [lang, bytes] of Object.entries(langRecord)) {
+            languages[lang] = Math.round(((bytes as number) / totalBytes) * 100)
           }
         }
       } catch {
@@ -114,9 +115,9 @@ export class GitHubService {
           recursive: 'true',
         })
 
-        const files = (treeData.tree || [])
+        const files: string[] = (treeData.tree || [])
           .slice(0, 1000)
-          .map((item) => item.path || '')
+          .map((item: { path?: string }) => item.path || '')
 
         const manifestPatterns = [
           'package.json',
@@ -134,25 +135,25 @@ export class GitHubService {
           'composer.json',
         ]
 
-        manifestsFound = files.filter((f) =>
-          manifestPatterns.some((pattern) => f.endsWith(pattern) || f === pattern)
+        manifestsFound = files.filter((f: string) =>
+          manifestPatterns.some((pattern: string) => f.endsWith(pattern) || f === pattern)
         )
 
-        hasReadme = files.some((f) => /^readme(\.[a-z0-9]+)?$/i.test(f))
+        hasReadme = files.some((f: string) => /^readme(\.[a-z0-9]+)?$/i.test(f))
         if (!hasLicense) {
-          hasLicense = files.some((f) => /^licen[sc]e(\.[a-z0-9]+)?$/i.test(f))
+          hasLicense = files.some((f: string) => /^licen[sc]e(\.[a-z0-9]+)?$/i.test(f))
         }
         hasTests = files.some(
-          (f) =>
+          (f: string) =>
             /(^|\/)(test|tests|__tests__|spec)\b/i.test(f) ||
             /\.(test|spec)\.[a-z0-9]+$/i.test(f) ||
             /_test\.go$/i.test(f)
         )
         hasCi = files.some(
-          (f) => f.startsWith('.github/workflows') || f.includes('.travis.yml') || f.includes('.circleci')
+          (f: string) => f.startsWith('.github/workflows') || f.includes('.travis.yml') || f.includes('.circleci')
         )
-        hasDocker = files.some((f) => /dockerfile|docker-compose/i.test(f))
-        hasSecurityPolicy = files.some((f) => /security\.md/i.test(f))
+        hasDocker = files.some((f: string) => /dockerfile|docker-compose/i.test(f))
+        hasSecurityPolicy = files.some((f: string) => /security\.md/i.test(f))
       } catch {
         // Fallback for repositories without valid git trees or restricted access
         hasReadme = true

@@ -8,8 +8,23 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+export type {
+  UserSession,
+  RepositoryMetadata,
+  RQSScoreBreakdown,
+  RepositoryWithScore,
+  SkillCitation,
+  SkillEvidenceItem,
+  ResumeClaim,
+  HiddenGemSkill,
+  PortfolioConfig,
+  ReferenceProfile,
+  PortfolioStrategy,
+  StrategyRecommendation,
+} from '@portfolio/types'
 export * from '@portfolio/types'
-import {
+
+import type {
   UserSession,
   RepositoryWithScore,
   SkillEvidenceItem,
